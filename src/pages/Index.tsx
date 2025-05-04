@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Mic, ArrowUp } from 'lucide-react';
+import { Plus, Search, ArrowUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import MessageList from '../components/MessageList';
 
@@ -92,28 +92,10 @@ const Index = () => {
             className="flex-1 py-3 px-2 bg-transparent border-none focus:outline-none text-base"
           />
           
-          {/* Action buttons */}
+          {/* Action buttons - simplified */}
           <div className="flex items-center mr-1">
             <Button variant="ghost" size="icon" className="rounded-full">
               <Search className="h-5 w-5" />
-            </Button>
-            
-            <div className="px-2 py-1 rounded-full border border-gray-300 flex items-center mx-1">
-              <Search className="h-4 w-4 mr-2" />
-              <span className="text-sm">Deep research</span>
-            </div>
-            
-            <div className="px-2 py-1 rounded-full border border-gray-300 flex items-center mx-1">
-              <Search className="h-4 w-4 mr-2" />
-              <span className="text-sm">Create image</span>
-            </div>
-            
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <span className="text-xl">•••</span>
-            </Button>
-            
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Mic className="h-5 w-5" />
             </Button>
             
             <Button 
