@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, ArrowUp } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import MessageList from '../components/MessageList';
 
@@ -76,11 +76,6 @@ const Index = () => {
       {/* Input container */}
       <div className="p-4 max-w-3xl mx-auto w-full">
         <div className="relative flex items-center rounded-full border border-gray-300 bg-white shadow-sm">
-          {/* Plus button */}
-          <Button variant="ghost" size="icon" className="rounded-full ml-1">
-            <Plus className="h-5 w-5" />
-          </Button>
-          
           {/* Input field */}
           <input
             ref={inputRef}
@@ -89,19 +84,15 @@ const Index = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="what's"
-            className="flex-1 py-3 px-2 bg-transparent border-none focus:outline-none text-base"
+            className="flex-1 py-3 px-4 bg-transparent border-none focus:outline-none text-base"
           />
           
-          {/* Action buttons - simplified */}
-          <div className="flex items-center mr-1">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Search className="h-5 w-5" />
-            </Button>
-            
+          {/* Send button */}
+          <div className="flex items-center mr-2">
             <Button 
               variant="default" 
               size="icon" 
-              className={`rounded-full ml-1 ${!inputValue.trim() ? 'bg-gray-200' : 'bg-black'}`}
+              className={`rounded-full ${!inputValue.trim() ? 'bg-gray-200' : 'bg-black'}`}
               onClick={handleSendMessage}
               disabled={!inputValue.trim()}
             >
