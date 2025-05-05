@@ -63,6 +63,11 @@ const Index = () => {
       {/* Header */}
       <div className="w-full text-center py-10">
         <h1 className="text-4xl font-bold">Where should we begin?</h1>
+        <div className="mt-4 flex justify-center">
+          <a href="/" className="text-blue-600 hover:text-blue-800 hover:underline">
+            Go to AI Boardroom →
+          </a>
+        </div>
       </div>
 
       {/* Messages container */}
