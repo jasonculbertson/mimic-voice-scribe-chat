@@ -1,4 +1,5 @@
-import { Anthropic } from '@anthropic-ai/sdk';
+// Use CommonJS require instead of ES modules for better compatibility with Vercel
+const { Anthropic } = require('@anthropic-ai/sdk');
 
 export default async function handler(req, res) {
   // Set CORS headers to allow requests from any origin
@@ -54,53 +55,44 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
 
-    // Try a non-streaming request first to test if the API is working
+    // Use a non-streaming approach for better reliability in serverless environments
     try {
-      console.log('Testing Claude API with non-streaming request...');
-      const testResponse = await anthropic.messages.create({
+      console.log('Using non-streaming Claude API for reliability...');
+      
+      // Make the API request
+      const response = await anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 100,
+        max_tokens: 1000,
         temperature: 0.7,
-        system: 'You are a helpful assistant.',
+        system: systemPrompt,
         messages: [
-          { role: 'user', content: 'Hello' }
+          { role: 'user', content: prompt }
         ]
       });
-      console.log('Claude API test successful');
-    } catch (testError) {
-      console.error('Claude API test failed:', testError);
-      res.status(500).json({ error: `Claude API test failed: ${testError.message}` });
-      return;
-    }
-    
-    // Create a streaming message
-    const stream = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1000,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      stream: true
-    });
-
-    let fullResponse = '';
-
-    // Stream the response
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text') {
-        const content = chunk.delta.text || '';
-        fullResponse += content;
+      
+      // Extract the response text
+      if (response && response.content && response.content.length > 0) {
+        const fullResponse = response.content[0].text;
+        console.log('Claude response successful, length:', fullResponse.length);
         
-        // Send the chunk to the client
-        res.write(JSON.stringify({ content: fullResponse, done: false }) + '\n');
+        // Send the full response at once
+        res.status(200).json({ content: fullResponse, done: true });
+      } else {
+        throw new Error('Empty response from Claude API');
       }
+    } catch (apiError) {
+      console.error('Claude API error:', apiError);
+      
+      // Return a helpful error message
+      res.status(500).json({ 
+        error: `Claude API error: ${apiError.message}`,
+        details: {
+          apiKeyAvailable: !!process.env.ANTHROPIC_API_KEY,
+          apiKeyLength: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+          apiKeyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 7) : 'none'
+        }
+      });
     }
-
-    // Send the final response
-    res.write(JSON.stringify({ content: fullResponse, done: true }) + '\n');
-    res.end();
   } catch (error) {
     console.error('Error in Claude API:', error);
     
