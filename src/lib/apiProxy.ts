@@ -18,7 +18,7 @@ export interface StreamChunk {
 }
 
 // Default timeout for fetch requests in milliseconds
-const DEFAULT_TIMEOUT = 15000;
+const DEFAULT_TIMEOUT = 30000; // Increased timeout for real API calls
 
 /**
  * Creates a fetch request with a timeout
@@ -38,7 +38,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeout = DEF
   }
 };
 
-// Flag to determine if we should use mock data (set to true if APIs are repeatedly failing)
+// Flag to determine if we should use mock data (set to false to prioritize real APIs)
 let useMockData = false;
 
 // Function to handle streaming API responses
@@ -47,11 +47,6 @@ export async function fetchStreamingResponse(
   payload: any,
   onChunk: (chunk: StreamChunk) => void
 ): Promise<string> {
-  // If we've determined APIs aren't working, use mock data
-  if (useMockData) {
-    return simulateMockResponse(payload.prompt, payload.round, payload.systemPrompt, onChunk);
-  }
-
   try {
     console.log(`Making request to: ${endpoint}`);
     const response = await fetchWithTimeout(endpoint, {
@@ -64,6 +59,7 @@ export async function fetchStreamingResponse(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`API request failed: ${response.status} - ${errorText}`);
       throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
@@ -113,7 +109,7 @@ export async function fetchStreamingResponse(
       console.error('Failed to fetch. This could indicate a CORS issue, network problem, or incorrect API endpoint URL.');
       console.error(`Attempted to connect to: ${endpoint}`);
       
-      // After consecutive failures, switch to mock data
+      // After failures, switch to mock data
       useMockData = true;
       console.log('Switching to mock data mode due to API availability issues');
       
