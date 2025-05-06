@@ -1,3 +1,4 @@
+
 // This file defines the endpoints for our serverless functions
 // Replace these with your actual deployed serverless function URLs when deployed
 
@@ -24,6 +25,7 @@ export async function fetchStreamingResponse(
   onChunk: (chunk: StreamChunk) => void
 ): Promise<string> {
   try {
+    console.log(`Making request to: ${endpoint}`);
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -77,10 +79,20 @@ export async function fetchStreamingResponse(
     return fullResponse;
   } catch (error) {
     console.error('Error in streaming request:', error);
+    const errorMessage = error instanceof Error 
+      ? `Error: ${error.message}` 
+      : `Error: ${String(error)}`;
+    
+    // Add more debug info for fetch errors
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      console.error('Failed to fetch. This could indicate a CORS issue, network problem, or incorrect API endpoint URL.');
+      console.error(`Attempted to connect to: ${endpoint}`);
+    }
+    
     onChunk({ 
-      content: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      content: errorMessage,
       done: true 
     });
-    return `Error: ${error instanceof Error ? error.message : String(error)}`;
+    return errorMessage;
   }
 }
