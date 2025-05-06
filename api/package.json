@@ -1,0 +1,10 @@
+{
+  "name": "ai-boardroom-api",
+  "version": "1.0.0",
+  "description": "API endpoints for AI Boardroom",
+  "dependencies": {
+    "openai": "^4.29.0",
+    "@anthropic-ai/sdk": "^0.10.0",
+    "@google/generative-ai": "^0.2.0"
+  }
+}
