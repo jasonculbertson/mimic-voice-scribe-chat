@@ -1,25 +1,202 @@
-// This is a mock service that simulates the AI Boardroom functionality
-// In a real implementation, this would make actual API calls to OpenAI, Anthropic, and Google
+import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Simulated delay for responses
-const RESPONSE_DELAY = 1000;
+export type AIModel = 'gpt' | 'claude' | 'gemini';
 
-// Mock responses for each AI model
-const mockResponses = {
-  gpt4: (prompt: string) => `**GPT-4 Response**\n\nHere's my strategic analysis of your question about "${prompt}":\n\n• The key strategic consideration is understanding the core objectives and constraints\n• Based on best practices, I recommend a phased approach to implementation\n• Consider measuring success through both quantitative and qualitative metrics\n\nThis approach balances short-term gains with long-term strategic positioning.`,
-  
-  claude: (prompt: string) => `**Claude's Perspective**\n\nLooking at "${prompt}" from a different angle:\n\n• While conventional wisdom suggests a direct approach, I recommend considering alternative frameworks\n• The most overlooked factor is typically the human element - how stakeholders will respond emotionally\n• A contrarian but valuable approach would be to start with small experiments rather than a comprehensive plan\n\nThis perspective complements traditional strategic thinking by incorporating adaptive learning.`,
-  
-  gemini: (prompt: string) => `🔑 **Key Takeaways**\n• Combine strategic planning with adaptive implementation\n• Balance stakeholder needs with technical feasibility\n• Measure both process and outcome metrics\n\n🧠 **Best Advice**\n• Start with small, high-impact experiments\n• Create feedback loops for continuous learning\n• Build coalitions of support across different stakeholder groups\n\n💡 **Final Insight**\n\nSuccess with "${prompt}" requires both analytical rigor and emotional intelligence - plan carefully but adapt quickly based on real-world feedback.`,
-  
-  gpt4Round2: (prompt: string) => `**GPT-4 Round 2 Analysis**\n\nBuilding on the previous insights about "${prompt}", I'd like to refine the recommendations:\n\n• The synthesis correctly identifies the need for both planning and adaptation, but should emphasize decision criteria for when to pivot\n• A critical missing element is competitive analysis - understanding how others have approached similar challenges\n• The advice on experiments could be more specific: start with 2-3 well-defined tests that can be completed within 2-4 weeks\n\nThese refinements make the strategy more immediately actionable while maintaining the balanced approach.`,
-  
-  claudeRound2: (prompt: string) => `**Claude's Round 2 Perspective**\n\nAfter reviewing the previous responses about "${prompt}", I'd add these important considerations:\n\n• The discussion of metrics should distinguish between leading indicators (which predict success) and lagging indicators (which confirm it)\n• A practical framework for stakeholder management would strengthen the implementation plan\n• The "small experiments" approach is sound, but needs a clear decision tree for scaling successful tests\n\nWith these additions, the strategy becomes more robust and implementation-ready.`,
-  
-  geminiRound2: (prompt: string) => `🔑 **FINAL ANSWER**\n• Approach "${prompt}" with a dual mindset: strategic vision paired with tactical experimentation\n• Build a stakeholder influence map to identify champions, resistors, and key decision-makers\n• Establish both leading indicators (predictive) and lagging indicators (confirmatory) for measuring progress\n\n💡 **ACTIONABLE STEPS**\n1. Define 2-3 specific experiments to test core assumptions within the next 30 days\n2. Create a decision tree with clear criteria for scaling, pivoting, or abandoning approaches\n3. Develop a communication strategy tailored to different stakeholder groups\n4. Implement regular review cycles that examine both data and qualitative feedback\n\nThis comprehensive approach combines analytical rigor with practical implementation steps, balancing short-term action with long-term strategic positioning.`
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  model?: AIModel;
+  pending?: boolean;
+  round?: number;
+}
+
+// Initialize API clients
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true,
+});
+
+const anthropic = new Anthropic({
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY,
+});
+
+const genAI = new GoogleGenerativeAI(
+  import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
+);
+
+// Function to generate a response from GPT-4 with streaming
+const generateGPTResponse = async (
+  prompt: string, 
+  round: number,
+  onChunk: (chunk: string, done: boolean) => void
+) => {
+  try {
+    let systemPrompt = '';
+    if (round === 1) {
+      systemPrompt = `You are GPT-4, an advanced AI assistant. Analyze the user's question and provide a thoughtful, direct response. Be clear, concise, and accurate. If asked about facts like dates, time, or specific information, provide the factual answer without strategic analysis.`;
+    } else {
+      systemPrompt = `You are GPT-4, an advanced AI assistant. You've already provided an initial response to the user's question. Now, you've seen responses from Claude and Gemini on the same topic. Refine your original answer by incorporating valuable insights from their perspectives. Be direct and factual, especially for questions about dates, time, or specific information.`;
+    }
+
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      stream: true,
+    });
+
+    let fullResponse = '';
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        fullResponse += content;
+        onChunk(fullResponse, false);
+      }
+    }
+    onChunk(fullResponse, true);
+    return fullResponse;
+  } catch (error) {
+    console.error('Error generating GPT response:', error);
+    onChunk('Error generating response from GPT-4. Please try again.', true);
+    return 'Error generating response from GPT-4. Please try again.';
+  }
 };
 
-// Simulate the streaming API response
+// Function to generate a response from Claude with streaming
+const generateClaudeResponse = async (
+  prompt: string, 
+  round: number,
+  onChunk: (chunk: string, done: boolean) => void
+) => {
+  try {
+    let systemPrompt = '';
+    if (round === 1) {
+      systemPrompt = `You are Claude, an AI assistant by Anthropic. Analyze the user's question and provide a direct, factual response. Be clear, concise, and accurate. If asked about facts like dates, time, or specific information, provide the factual answer without unnecessary analysis.`;
+    } else {
+      systemPrompt = `You are Claude, an AI assistant by Anthropic. You've already provided an initial response to the user's question. Now, you've seen responses from GPT-4 and Gemini on the same topic. Refine your original answer by incorporating valuable insights from their perspectives while maintaining your unique viewpoint. Be direct and factual, especially for questions about dates, time, or specific information.`;
+    }
+
+    const messageStream = await anthropic.messages.stream({
+      model: 'claude-3-opus-20240229',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    let fullResponse = '';
+    for await (const chunk of messageStream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta && typeof chunk.delta === 'object') {
+        // Handle different possible structures of the delta object
+        const text = 'text' in chunk.delta ? chunk.delta.text as string : '';
+        if (text) {
+          fullResponse += text;
+          onChunk(fullResponse, false);
+        }
+      }
+    }
+    onChunk(fullResponse, true);
+    return fullResponse;
+  } catch (error) {
+    console.error('Error generating Claude response:', error);
+    onChunk('Error generating response from Claude. Please try again.', true);
+    return 'Error generating response from Claude. Please try again.';
+  }
+};
+
+// Function to generate a response from Gemini with streaming
+const generateGeminiResponse = async (
+  prompt: string, 
+  round: number,
+  onChunk: (chunk: string, done: boolean) => void
+) => {
+  try {
+    let systemPrompt = '';
+    if (round === 1) {
+      systemPrompt = `You are Gemini, Google's advanced AI model. Analyze the user's question and provide a direct, factual response. Be clear, concise, and accurate. If asked about facts like dates, time, or specific information, provide the factual answer without unnecessary analysis.`;
+    } else {
+      systemPrompt = `You are Gemini, Google's advanced AI model. You've already provided an initial response to the user's question. Now, you've seen responses from GPT-4 and Claude on the same topic. Your task is to synthesize all three perspectives (including your own) into a comprehensive final response. Be direct and factual, especially for questions about dates, time, or specific information.`;
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    
+    const fullPrompt = `${systemPrompt}
+
+User Question: ${prompt}`;
+    const result = await model.generateContentStream(fullPrompt);
+    
+    let fullResponse = '';
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      if (chunkText) {
+        fullResponse += chunkText;
+        onChunk(fullResponse, false);
+      }
+    }
+    onChunk(fullResponse, true);
+    return fullResponse;
+  } catch (error) {
+    console.error('Error generating Gemini response:', error);
+    onChunk('Error generating response from Gemini. Please try again.', true);
+    return 'Error generating response from Gemini. Please try again.';
+  }
+};
+
+// Function to handle the AI Boardroom process with real API calls and streaming
+export const processAIBoardroom = async (
+  prompt: string,
+  onUpdate: (model: AIModel, content: string, round: number, done: boolean) => void
+) => {
+  try {
+    // Round 1: Initial responses from each model
+    const models: AIModel[] = ['gpt', 'claude', 'gemini'];
+    
+    // Process each model sequentially
+    for (const model of models) {
+      if (model === 'gpt') {
+        await generateGPTResponse(prompt, 1, (content, done) => {
+          onUpdate('gpt', content, 1, done);
+        });
+      } else if (model === 'claude') {
+        await generateClaudeResponse(prompt, 1, (content, done) => {
+          onUpdate('claude', content, 1, done);
+        });
+      } else if (model === 'gemini') {
+        await generateGeminiResponse(prompt, 1, (content, done) => {
+          onUpdate('gemini', content, 1, done);
+        });
+      }
+    }
+    
+    // Round 2: Refined responses based on all models' inputs
+    for (const model of models) {
+      if (model === 'gpt') {
+        await generateGPTResponse(prompt, 2, (content, done) => {
+          onUpdate('gpt', content, 2, done);
+        });
+      } else if (model === 'claude') {
+        await generateClaudeResponse(prompt, 2, (content, done) => {
+          onUpdate('claude', content, 2, done);
+        });
+      } else if (model === 'gemini') {
+        await generateGeminiResponse(prompt, 2, (content, done) => {
+          onUpdate('gemini', content, 2, done);
+        });
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in AI Boardroom process:', error);
+    return false;
+  }
+};
+
+// For backward compatibility
 export async function fetchAIBoardroomResponses(prompt: string, callbacks: {
   onGPT4Response: (response: string) => void;
   onClaudeResponse: (response: string) => void;
@@ -30,32 +207,25 @@ export async function fetchAIBoardroomResponses(prompt: string, callbacks: {
   onError: (error: string) => void;
 }) {
   try {
-    // Simulate GPT-4 response
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY));
-    callbacks.onGPT4Response(mockResponses.gpt4(prompt));
-    
-    // Simulate Claude response
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY));
-    callbacks.onClaudeResponse(mockResponses.claude(prompt));
-    
-    // Simulate Gemini response
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY));
-    callbacks.onGeminiResponse(mockResponses.gemini(prompt));
-    
-    // Simulate Round 2 responses
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY * 1.5));
-    callbacks.onGPT4Round2Response(mockResponses.gpt4Round2(prompt));
-    
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY));
-    callbacks.onClaudeRound2Response(mockResponses.claudeRound2(prompt));
-    
-    await new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY));
-    callbacks.onGeminiRound2Response(mockResponses.geminiRound2(prompt));
-    
+    // Use the real implementation but map to the old callback interface
+    await processAIBoardroom(prompt, (model, content, round, done) => {
+      if (!done) return; // Only call callbacks when content is complete
+      
+      if (model === 'gpt' && round === 1) {
+        callbacks.onGPT4Response(content);
+      } else if (model === 'claude' && round === 1) {
+        callbacks.onClaudeResponse(content);
+      } else if (model === 'gemini' && round === 1) {
+        callbacks.onGeminiResponse(content);
+      } else if (model === 'gpt' && round === 2) {
+        callbacks.onGPT4Round2Response(content);
+      } else if (model === 'claude' && round === 2) {
+        callbacks.onClaudeRound2Response(content);
+      } else if (model === 'gemini' && round === 2) {
+        callbacks.onGeminiRound2Response(content);
+      }
+    });
   } catch (error) {
     callbacks.onError(`Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
-
-// In a real implementation, this would be replaced with actual API calls
-// to OpenAI, Anthropic, and Google AI services
