@@ -1,4 +1,3 @@
-
 // This file defines the endpoints for our serverless functions
 // Replace these with your actual deployed serverless function URLs when deployed
 
