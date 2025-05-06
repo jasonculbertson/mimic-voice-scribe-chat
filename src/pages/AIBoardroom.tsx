@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Send, XCircle, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -171,9 +170,6 @@ const AIBoardroom = () => {
           <h1 className="text-4xl font-bold">AI Boardroom</h1>
           <p className="text-gray-600 max-w-md mx-auto mt-4 text-sm">
             Ask a question to consult with your AI Board of Directors. Get strategic insights from GPT-4, critical analysis from Claude, and a synthesized response from Gemini.
-          </p>
-          <p className="text-amber-600 max-w-md mx-auto mt-4 text-xs">
-            Note: Using real API calls to OpenAI, Anthropic, and Google AI.
           </p>
         </div>
       )}
