@@ -143,7 +143,10 @@ async function simulateMockResponse(
   onChunk: (chunk: StreamChunk) => void
 ): Promise<string> {
   // Generate a response based on the prompt
-  const mockResponses: Record<string, string> = {
+  const modelType = systemPrompt.toLowerCase().includes('gpt') ? 'gpt' : 
+                   systemPrompt.toLowerCase().includes('claude') ? 'claude' : 'gemini';
+                   
+  const mockResponses: Record<string, Record<number, string>> = {
     gpt: {
       1: `GPT-4 Round 1: This is a simulated response to "${prompt}". The server API endpoints are currently unavailable, so I'm showing you how the interface works with mock data. In a production environment, this would be powered by OpenAI's GPT-4 model.`,
       2: `GPT-4 Round 2: After reviewing Claude and Gemini's responses, I'd like to refine my thoughts. This is still a mock response since the API endpoints are unavailable. In production, this would show GPT-4's refined answer that incorporates insights from other models.`
@@ -156,11 +159,14 @@ async function simulateMockResponse(
       1: `Gemini Round 1: This is Gemini's simulated response to "${prompt}". Since the API endpoints are unavailable, I'm showing mock data to demonstrate the interface. In production, this would show Google's Gemini model response.`,
       2: `Gemini Final Answer: After reviewing all perspectives, here's a synthesis of the discussion. This is mock data since the API endpoints are unavailable. In production, Gemini would synthesize insights from all three models to provide a comprehensive final answer.`
     }
-  }[endpoint.split('/').pop() || 'gpt'][round];
+  };
+
+  const mockResponse = mockResponses[modelType][round] || 
+    `Mock response for ${modelType} round ${round}: This is a simulated response to "${prompt}".`;
 
   // Simulate streaming by sending the response chunk by chunk
   let currentResponse = '';
-  const words = mockResponses.split(' ');
+  const words = mockResponse.split(' ');
   
   for (let i = 0; i < words.length; i++) {
     await new Promise(resolve => setTimeout(resolve, 50)); // Delay between words
@@ -168,5 +174,5 @@ async function simulateMockResponse(
     onChunk({ content: currentResponse, done: i === words.length - 1 });
   }
   
-  return mockResponses;
+  return mockResponse;
 }

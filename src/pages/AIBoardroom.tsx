@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Send, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -192,7 +191,7 @@ const AIBoardroom = () => {
       {/* Mock data notification */}
       {useMockData && (
         <div className="px-4 max-w-3xl mx-auto w-full">
-          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
             <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
             <AlertDescription className="text-amber-800 text-sm">
               Demo Mode: API endpoints are currently unavailable. Using mock data to demonstrate the interface functionality.
