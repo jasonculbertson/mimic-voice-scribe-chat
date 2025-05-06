@@ -2,7 +2,8 @@
 // This file defines the endpoints for our serverless functions
 
 // Base URL for all API proxy endpoints
-// In production, this would be your deployed serverless functions URL
+// In production, this should point to your permanent domain (e.g., your-app.vercel.app/api)
+// rather than a deployment-specific URL which changes with each deployment
 const BASE_URL = import.meta.env.VITE_API_PROXY_URL || '/api';
 
 export const API_ENDPOINTS = {
