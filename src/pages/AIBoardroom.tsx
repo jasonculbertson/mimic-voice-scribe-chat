@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Send, XCircle, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,9 @@ const AIBoardroom = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Function to generate a unique ID
+  const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -41,9 +45,6 @@ const AIBoardroom = () => {
 
     // Create a new abort controller for this request
     abortControllerRef.current = new AbortController();
-
-    // Function to generate a unique ID
-    const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Add user message
     const userMessage: Message = {

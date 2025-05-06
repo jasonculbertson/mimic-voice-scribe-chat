@@ -1,3 +1,4 @@
+
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -15,16 +16,16 @@ export interface Message {
 
 // Initialize API clients
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   dangerouslyAllowBrowser: true,
 });
 
 const anthropic = new Anthropic({
-  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY,
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
 });
 
 const genAI = new GoogleGenerativeAI(
-  import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
+  import.meta.env.VITE_GEMINI_API_KEY || ''
 );
 
 // Function to generate a response from GPT-4 with streaming
