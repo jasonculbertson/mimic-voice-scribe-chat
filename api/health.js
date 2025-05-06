@@ -17,8 +17,15 @@ export default function handler(req, res) {
     message: 'API is working',
     environment: {
       openai_key_available: !!process.env.OPENAI_API_KEY,
+      openai_key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+      openai_key_prefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 7) : 'none',
       anthropic_key_available: !!process.env.ANTHROPIC_API_KEY,
-      gemini_key_available: !!process.env.GEMINI_API_KEY
+      anthropic_key_length: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+      anthropic_key_prefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 7) : 'none',
+      gemini_key_available: !!process.env.GEMINI_API_KEY,
+      gemini_key_length: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+      gemini_key_prefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 7) : 'none',
+      node_env: process.env.NODE_ENV || 'not set'
     }
   });
 }

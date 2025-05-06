@@ -9,9 +9,5 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" }
   ],
-  "env": {
-    "OPENAI_API_KEY": "OPENAI_API_KEY",
-    "ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY",
-    "GEMINI_API_KEY": "GEMINI_API_KEY"
-  }
+  "_comment": "Environment variables are managed directly in the Vercel dashboard"
 }
