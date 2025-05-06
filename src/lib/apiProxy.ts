@@ -1,6 +1,5 @@
 
 // This file defines the endpoints for our serverless functions
-// Replace these with your actual deployed serverless function URLs when deployed
 
 // Base URL for all API proxy endpoints
 // In production, this would be your deployed serverless functions URL
@@ -18,21 +17,50 @@ export interface StreamChunk {
   done: boolean;
 }
 
+// Default timeout for fetch requests in milliseconds
+const DEFAULT_TIMEOUT = 15000;
+
+/**
+ * Creates a fetch request with a timeout
+ */
+const fetchWithTimeout = async (url: string, options: RequestInit, timeout = DEFAULT_TIMEOUT): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+// Flag to determine if we should use mock data (set to true if APIs are repeatedly failing)
+let useMockData = false;
+
 // Function to handle streaming API responses
 export async function fetchStreamingResponse(
   endpoint: string,
   payload: any,
   onChunk: (chunk: StreamChunk) => void
 ): Promise<string> {
+  // If we've determined APIs aren't working, use mock data
+  if (useMockData) {
+    return simulateMockResponse(payload.prompt, payload.round, payload.systemPrompt, onChunk);
+  }
+
   try {
     console.log(`Making request to: ${endpoint}`);
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
-    });
+    }, DEFAULT_TIMEOUT);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -79,15 +107,23 @@ export async function fetchStreamingResponse(
     return fullResponse;
   } catch (error) {
     console.error('Error in streaming request:', error);
-    const errorMessage = error instanceof Error 
-      ? `Error: ${error.message}` 
-      : `Error: ${String(error)}`;
     
-    // Add more debug info for fetch errors
+    // If error is due to network or CORS, switch to mock data
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       console.error('Failed to fetch. This could indicate a CORS issue, network problem, or incorrect API endpoint URL.');
       console.error(`Attempted to connect to: ${endpoint}`);
+      
+      // After consecutive failures, switch to mock data
+      useMockData = true;
+      console.log('Switching to mock data mode due to API availability issues');
+      
+      // Use mock data instead
+      return simulateMockResponse(payload.prompt, payload.round, payload.systemPrompt, onChunk);
     }
+    
+    const errorMessage = error instanceof Error 
+      ? `Error: ${error.message}` 
+      : `Error: ${String(error)}`;
     
     onChunk({ 
       content: errorMessage,
@@ -95,4 +131,42 @@ export async function fetchStreamingResponse(
     });
     return errorMessage;
   }
+}
+
+/**
+ * Simulates a streaming response with mock data when APIs are not available
+ */
+async function simulateMockResponse(
+  prompt: string, 
+  round: number,
+  systemPrompt: string,
+  onChunk: (chunk: StreamChunk) => void
+): Promise<string> {
+  // Generate a response based on the prompt
+  const mockResponses: Record<string, string> = {
+    gpt: {
+      1: `GPT-4 Round 1: This is a simulated response to "${prompt}". The server API endpoints are currently unavailable, so I'm showing you how the interface works with mock data. In a production environment, this would be powered by OpenAI's GPT-4 model.`,
+      2: `GPT-4 Round 2: After reviewing Claude and Gemini's responses, I'd like to refine my thoughts. This is still a mock response since the API endpoints are unavailable. In production, this would show GPT-4's refined answer that incorporates insights from other models.`
+    },
+    claude: {
+      1: `Claude Round 1: Here is Claude's simulated response to "${prompt}". I'm demonstrating the interface with mock data since the API endpoints are currently unavailable. In production, this would be powered by Anthropic's Claude model.`,
+      2: `Claude Round 2: Building on what GPT-4 and Gemini shared, let me refine my thoughts. This is a simulated response with mock data. In production, Claude would provide unique insights that complement the other models.`
+    },
+    gemini: {
+      1: `Gemini Round 1: This is Gemini's simulated response to "${prompt}". Since the API endpoints are unavailable, I'm showing mock data to demonstrate the interface. In production, this would show Google's Gemini model response.`,
+      2: `Gemini Final Answer: After reviewing all perspectives, here's a synthesis of the discussion. This is mock data since the API endpoints are unavailable. In production, Gemini would synthesize insights from all three models to provide a comprehensive final answer.`
+    }
+  }[endpoint.split('/').pop() || 'gpt'][round];
+
+  // Simulate streaming by sending the response chunk by chunk
+  let currentResponse = '';
+  const words = mockResponses.split(' ');
+  
+  for (let i = 0; i < words.length; i++) {
+    await new Promise(resolve => setTimeout(resolve, 50)); // Delay between words
+    currentResponse += (i > 0 ? ' ' : '') + words[i];
+    onChunk({ content: currentResponse, done: i === words.length - 1 });
+  }
+  
+  return mockResponses;
 }

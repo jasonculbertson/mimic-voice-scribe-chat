@@ -1,8 +1,11 @@
+
 import { useState, useRef, useEffect } from 'react';
-import { Send, XCircle, Loader2 } from 'lucide-react';
+import { Send, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AIBoardroomMessageList from '../components/AIBoardroomMessageList';
 import { processAIBoardroom, AIModel, Message } from '../lib/aiBoardroomService';
+import { useToast } from "@/hooks/use-toast";
 
 const AIBoardroom = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -10,10 +13,12 @@ const AIBoardroom = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { toast } = useToast();
 
   // Function to generate a unique ID
   const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -127,6 +132,16 @@ const AIBoardroom = () => {
     try {
       // Process AI Boardroom with streaming updates
       await processAIBoardroom(input, (model, content, round, done) => {
+        // Check if mock data is being used (content will contain indicator)
+        if (content.includes("This is a simulated response") && !useMockData) {
+          setUseMockData(true);
+          toast({
+            title: "Using Demo Mode",
+            description: "API endpoints are unavailable. Using mock data to demonstrate the interface.",
+            duration: 5000,
+          });
+        }
+        
         // Update the corresponding message
         setMessages(prev => {
           return prev.map(msg => {
@@ -171,6 +186,18 @@ const AIBoardroom = () => {
           <p className="text-gray-600 max-w-md mx-auto mt-4 text-sm">
             Ask a question to consult with your AI Board of Directors. Get strategic insights from GPT-4, critical analysis from Claude, and a synthesized response from Gemini.
           </p>
+        </div>
+      )}
+
+      {/* Mock data notification */}
+      {useMockData && (
+        <div className="px-4 max-w-3xl mx-auto w-full">
+          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+            <AlertDescription className="text-amber-800 text-sm">
+              Demo Mode: API endpoints are currently unavailable. Using mock data to demonstrate the interface functionality.
+            </AlertDescription>
+          </Alert>
         </div>
       )}
 

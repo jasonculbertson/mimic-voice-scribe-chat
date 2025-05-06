@@ -1,5 +1,6 @@
 
 import { API_ENDPOINTS, fetchStreamingResponse } from './apiProxy';
+import { useToast } from "@/hooks/use-toast";
 
 export type AIModel = 'gpt' | 'claude' | 'gemini';
 
