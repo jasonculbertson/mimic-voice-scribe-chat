@@ -22,6 +22,7 @@ const openai = new OpenAI({
 
 const anthropic = new Anthropic({
   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+  dangerouslyAllowBrowser: true,  // Add this option to allow browser usage
 });
 
 const genAI = new GoogleGenerativeAI(
