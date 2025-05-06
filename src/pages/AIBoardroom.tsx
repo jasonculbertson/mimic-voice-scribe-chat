@@ -3,7 +3,6 @@ import { Send, XCircle, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import AIBoardroomMessageList from '../components/AIBoardroomMessageList';
 import { processAIBoardroom, AIModel, Message } from '../lib/aiBoardroomService';
-import { v4 as uuidv4 } from 'uuid';
 
 const AIBoardroom = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,9 +42,12 @@ const AIBoardroom = () => {
     // Create a new abort controller for this request
     abortControllerRef.current = new AbortController();
 
+    // Function to generate a unique ID
+    const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     // Add user message
     const userMessage: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'user',
       content: input
     };
@@ -58,7 +60,7 @@ const AIBoardroom = () => {
 
     // Create placeholder messages for each model and round
     const gptMessage1: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'gpt',
@@ -67,7 +69,7 @@ const AIBoardroom = () => {
     };
 
     const claudeMessage1: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'claude',
@@ -76,7 +78,7 @@ const AIBoardroom = () => {
     };
 
     const geminiMessage1: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'gemini',
@@ -85,7 +87,7 @@ const AIBoardroom = () => {
     };
 
     const gptMessage2: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'gpt',
@@ -94,7 +96,7 @@ const AIBoardroom = () => {
     };
 
     const claudeMessage2: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'claude',
@@ -103,7 +105,7 @@ const AIBoardroom = () => {
     };
 
     const geminiMessage2: Message = {
-      id: uuidv4(),
+      id: generateId(),
       role: 'assistant',
       content: '',
       model: 'gemini',
