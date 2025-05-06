@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { Anthropic } from '@anthropic-ai/sdk';
 
 export default async function handler(req, res) {
   // Set CORS headers to allow requests from any origin
@@ -27,15 +27,52 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Check if API key is available
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set');
+      res.status(500).json({ error: 'API key not configured' });
+      return;
+    }
+    
+    console.log(`Claude API key available: ${!!process.env.ANTHROPIC_API_KEY}`);
+    console.log(`Claude API key length: ${process.env.ANTHROPIC_API_KEY.length}`);
+    console.log(`Claude API key prefix: ${process.env.ANTHROPIC_API_KEY.substring(0, 7)}`);
+
     // Initialize Anthropic client with API key from environment variable
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
+    
+    // Verify the client was initialized correctly
+    if (!anthropic || !anthropic.messages) {
+      console.error('Failed to initialize Anthropic client');
+      res.status(500).json({ error: 'Failed to initialize API client' });
+      return;
+    }
 
     // Set response headers for streaming
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
 
+    // Try a non-streaming request first to test if the API is working
+    try {
+      console.log('Testing Claude API with non-streaming request...');
+      const testResponse = await anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 100,
+        temperature: 0.7,
+        system: 'You are a helpful assistant.',
+        messages: [
+          { role: 'user', content: 'Hello' }
+        ]
+      });
+      console.log('Claude API test successful');
+    } catch (testError) {
+      console.error('Claude API test failed:', testError);
+      res.status(500).json({ error: `Claude API test failed: ${testError.message}` });
+      return;
+    }
+    
     // Create a streaming message
     const stream = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
